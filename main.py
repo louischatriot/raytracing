@@ -1,4 +1,5 @@
 from math import cos, sin, pi, sqrt, floor
+import cairo
 
 
 class Vector:
@@ -87,25 +88,34 @@ class Player:
 
 
 class Scene:
-    screen_W = 800
-    screen_H = 600
+    def __init__(self):
+        # Screen
+        self.screen_W = 800
+        self.screen_H = 600
+        self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.screen_W, self.screen_H)
+        self.ctx = cairo.Context(self.surface)
+        self.ctx.scale(self.screen_W, self.screen_H)
 
-    # Virtual display in front of observer eyes
-    # Meters
-    display_d = 1
-    display_W = 1
-    display_H = 0.75
+        # Virtual display in front of observer eyes
+        # Meters
+        self.display_d = 1
+        self.display_W = 1
+        self.display_H = 0.75
 
     # Given a player at a position and looking in a direction
     # and a pixel on the screen, return a Vector representing
     # this pixel on the virtual display
-    def get_point(player, screen_x, screen_y):
+    def get_point(self, player, screen_x, screen_y):
         v, w, h = calc_vectors(player.a, player.t)
         res = player.pos
-        res += v * Scene.display_d
-        res += w * (Scene.display_W * (screen_x / Scene.screen_W - 0.5))
-        res += h * (Scene.display_H * (screen_y / Scene.screen_H - 0.5))
+        res += v * self.display_d
+        res += w * (self.display_W * (screen_x / self.screen_W - 0.5))
+        res += h * (self.display_H * (screen_y / self.screen_H - 0.5))
         return res
+
+
+    def draw_pixel(x, y, color):
+        pass
 
 
 
@@ -118,7 +128,7 @@ print(v * 2)
 
 player.a = pi / 4
 
-print(Scene.get_point(player, 400, 300))
 
+scene = Scene()
 
 
