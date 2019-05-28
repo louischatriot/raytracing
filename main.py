@@ -1,4 +1,4 @@
-from math import cos, sin, pi, sqrt
+from math import cos, sin, pi, sqrt, floor
 
 
 class Vector:
@@ -7,8 +7,11 @@ class Vector:
         self.y = y
         self.z = z
 
+    def norm_squared(self):
+        return self.x * self.x + self.y * self.y + self.z * self.z
+
     def norm(self):
-        return sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
+        return sqrt(self.norm())
 
     def __str__(self):
         return f"<Vector> {self.x} ; {self.y} ; {self.z}"
@@ -23,6 +26,10 @@ class Vector:
     def __mul__(self, other):
         return Vector(self.x * other, self.y * other, self.z * other)
 
+    # scalar product: **
+    def __pow__(self, other):
+        return self.x * other.x + self.y * other.y + self.z * other.z
+
 
 # a = alpha = angle on (x, y)
 # t = theta = angle on ((x,y), z)
@@ -34,6 +41,7 @@ def calc_vectors(a, t):
     return v, w, h
 
 
+
 # Returns closest intersection point from eye direction to sphere if any
 # e_p (vector) = point E, the eye
 # m_p (vector) = point M, the pixel on the screen
@@ -43,9 +51,13 @@ def intersect_sphere(e_p, m_p, c_p, r):
     m = m_p - e_p
     ec = c_p - e_p
 
-    a = m.x * m.x + m.y * m.y + m.z * m.z
-    b = 2 * (m.x * ec.x + m.y * ec.y + m.z * ec.z)
-    c = ec.x * ec.x + ec.y * ec.y + ec.z * ec.z
+    # a = m.x * m.x + m.y * m.y + m.z * m.z
+    # b = 2 * (m.x * ec.x + m.y * ec.y + m.z * ec.z)
+    # c = ec.x ** 2 + ec.y ** 2 + ec.z ** 2 - r ** 2
+
+    a = m.norm_squared()
+    b = - 2 * (m ** ec)
+    c = ec.norm_squared() - r ** 2
 
     d = b * b - 4 * a * c
     if d < 0:
