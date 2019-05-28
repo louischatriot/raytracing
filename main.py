@@ -1,5 +1,12 @@
 from math import cos, sin, pi, sqrt, floor
+
+# sudo apt-get install cairo
+# pip install pycairo
 import cairo
+
+# sudo apt install libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev gir1.2-gtk-3.0
+# pip3 install PyGObject
+from gi.repository import Gtk
 
 
 class Vector:
