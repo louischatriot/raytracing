@@ -79,9 +79,46 @@ def intersect_sphere(e_p, m_p, c_p, r):
         return i1
 
 
+class Player:
+    def __init__(self, a, t, pos = None):
+        self.a = a
+        self.t = t
+        self.pos = pos or Vector(0, 0, 0)
+
+
+class Scene:
+    screen_W = 800
+    screen_H = 600
+
+    # Virtual display in front of observer eyes
+    # Meters
+    display_d = 1
+    display_W = 1
+    display_H = 0.75
+
+    # Given a player at a position and looking in a direction
+    # and a pixel on the screen, return a Vector representing
+    # this pixel on the virtual display
+    def get_point(player, screen_x, screen_y):
+        v, w, h = calc_vectors(player.a, player.t)
+        res = player.pos
+        res += v * Scene.display_d
+        res += w * (Scene.display_W * (screen_x / Scene.screen_W - 0.5))
+        res += h * (Scene.display_H * (screen_y / Scene.screen_H - 0.5))
+        return res
 
 
 
+
+player = Player(0, 0)
+
+v = Vector(3, 6, 77)
+print(v)
+print(v * 2)
+
+player.a = pi / 4
+
+print(Scene.get_point(player, 400, 300))
 
 
 
