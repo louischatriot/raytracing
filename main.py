@@ -6,7 +6,13 @@ import cairo
 
 # sudo apt install libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev gir1.2-gtk-3.0
 # pip3 install PyGObject
+import gi
+gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
+
+
+# For testing
+SIZE = 30
 
 
 class Vector:
@@ -94,20 +100,51 @@ class Player:
         self.pos = pos or Vector(0, 0, 0)
 
 
+def draw(da, ctx):
+    print("EEEEEEE")
+    print(da)
+    print(ctx)
+
+
 class Scene:
     def __init__(self):
-        # Screen
+        # Screen (a gtk window)
         self.screen_W = 800
         self.screen_H = 600
-        self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.screen_W, self.screen_H)
-        self.ctx = cairo.Context(self.surface)
-        self.ctx.scale(self.screen_W, self.screen_H)
+        self.ctx = None
+
+        win = Gtk.Window()
+        win.connect('destroy', lambda w: Gtk.main_quit())
+        win.set_default_size(self.screen_W, self.screen_H)
+
+        drawingarea = Gtk.DrawingArea()
+        win.add(drawingarea)
+        drawingarea.connect('draw', self.draw_frame)
+
+        win.show_all()
+        Gtk.main()
 
         # Virtual display in front of observer eyes
         # Meters
         self.display_d = 1
         self.display_W = 1
         self.display_H = 0.75
+
+    def draw_frame(self, da, ctx):
+        if not self.ctx:
+            self.ctx = ctx
+
+        ctx.set_source_rgb(0, 0, 0)
+
+        ctx.set_line_width(SIZE / 4)
+        ctx.set_tolerance(0.1)
+
+
+        ctx.move_to(0, 0)
+        ctx.rel_line_to(2 * SIZE, 0)
+        ctx.rel_line_to(0, 2 * SIZE)
+        ctx.rel_line_to(-2 * SIZE, 0)
+        ctx.close_path()
 
     # Given a player at a position and looking in a direction
     # and a pixel on the screen, return a Vector representing
@@ -121,7 +158,24 @@ class Scene:
         return res
 
 
-    def draw_pixel(x, y, color):
+    def draw_pixel(self, x, y, color):
+        ctx = self.ctx
+
+        print("==================")
+        print(ctx)
+
+        ctx.set_source_rgb(0, 0, 0)
+
+        ctx.set_line_width(SIZE / 4)
+        ctx.set_tolerance(0.1)
+
+
+        ctx.move_to(0, 0)
+        ctx.rel_line_to(2 * SIZE, 0)
+        ctx.rel_line_to(0, 2 * SIZE)
+        ctx.rel_line_to(-2 * SIZE, 0)
+        ctx.close_path()
+
         pass
 
 
@@ -138,4 +192,5 @@ player.a = pi / 4
 
 scene = Scene()
 
+scene.draw_pixel(0, 0, 0)
 
