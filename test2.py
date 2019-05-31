@@ -28,17 +28,38 @@ def draw_shapes(ctx, x, y):
 def draw(da, ctx):
     print("Draw")
 
+    SIZE = 30
+    x = 0
+    y = 12
+
     ctx.set_line_width(SIZE / 4)
     ctx.set_tolerance(0.1)
 
     ctx.set_source_rgb(0, 0, 0)
-    draw_shapes(ctx, 0, 12 * SIZE)
 
-    ctx.set_source_rgb(1, 0, 0)
-    draw_shapes(ctx, 0, 15 * SIZE)
+    ctx.save()
 
-    t = Timer(3, another, [da, ctx])
-    t.start()
+    ctx.translate(x + SIZE, y + SIZE)
+    ctx.new_path()
+    ctx.translate(3 * SIZE, 0)
+    ctx.move_to(0, 0)
+    ctx.rel_line_to(2 * SIZE, 0)
+    ctx.rel_line_to(0, 2 * SIZE)
+    ctx.rel_line_to(-2 * SIZE, 0)
+    ctx.close_path()
+    ctx.fill()
+
+    ctx.restore()
+
+
+
+    # draw_shapes(ctx, 0, 12 * SIZE)
+
+    # ctx.set_source_rgb(1, 0, 0)
+    # draw_shapes(ctx, 0, 15 * SIZE)
+
+    # t = Timer(3, another, [da, ctx])
+    # t.start()
 
     # time.sleep(3)
     # another(da, ctx)

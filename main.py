@@ -10,6 +10,11 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
+import threading
+import time
+
+import random
+
 
 # For testing
 SIZE = 30
@@ -100,14 +105,14 @@ class Player:
         self.pos = pos or Vector(0, 0, 0)
 
 
-def draw(da, ctx):
-    print("EEEEEEE")
-    print(da)
-    print(ctx)
-
-
 class Scene:
     def __init__(self):
+        # Virtual display in front of observer eyes
+        # Meters
+        self.display_d = 1
+        self.display_W = 1
+        self.display_H = 0.75
+
         # Screen (a gtk window)
         self.screen_W = 800
         self.screen_H = 600
@@ -117,34 +122,38 @@ class Scene:
         win.connect('destroy', lambda w: Gtk.main_quit())
         win.set_default_size(self.screen_W, self.screen_H)
 
-        drawingarea = Gtk.DrawingArea()
-        win.add(drawingarea)
-        drawingarea.connect('draw', self.draw_frame)
+        self.drawingarea = Gtk.DrawingArea()
+        win.add(self.drawingarea)
+        self.drawingarea.connect('draw', self.draw_frame)
 
         win.show_all()
+
+        thread = threading.Thread(target=self.animate)
+        thread.daemon = True
+        thread.start()
+
+        # Start Gtk window (blocking call)
         Gtk.main()
 
-        # Virtual display in front of observer eyes
-        # Meters
-        self.display_d = 1
-        self.display_W = 1
-        self.display_H = 0.75
 
+    def animate(self):
+        while(True):
+            # Request animation frame
+            self.drawingarea.queue_draw()
+            time.sleep(1)
+
+
+    # Screen is cleared right before this function gets called
     def draw_frame(self, da, ctx):
-        if not self.ctx:
-            self.ctx = ctx
+        c = (0.5, 0, 0.5)
 
-        ctx.set_source_rgb(0, 0, 0)
-
-        ctx.set_line_width(SIZE / 4)
-        ctx.set_tolerance(0.1)
+        x = random.randrange(0, self.screen_W)
+        y = random.randrange(0, self.screen_H)
 
 
-        ctx.move_to(0, 0)
-        ctx.rel_line_to(2 * SIZE, 0)
-        ctx.rel_line_to(0, 2 * SIZE)
-        ctx.rel_line_to(-2 * SIZE, 0)
-        ctx.close_path()
+
+        self.draw_pixel(ctx, 40, 60, c)
+
 
     # Given a player at a position and looking in a direction
     # and a pixel on the screen, return a Vector representing
@@ -158,39 +167,17 @@ class Scene:
         return res
 
 
-    def draw_pixel(self, x, y, color):
-        ctx = self.ctx
+    # Color is a 3 numbers tuple or list
+    def draw_pixel(self, ctx, x, y, color):
+        ctx.rectangle(x, self.screen_H - y, 1, 1);
+        ctx.set_source_rgb(*color);
+        ctx.fill();
 
-        print("==================")
-        print(ctx)
-
-        ctx.set_source_rgb(0, 0, 0)
-
-        ctx.set_line_width(SIZE / 4)
-        ctx.set_tolerance(0.1)
-
-
-        ctx.move_to(0, 0)
-        ctx.rel_line_to(2 * SIZE, 0)
-        ctx.rel_line_to(0, 2 * SIZE)
-        ctx.rel_line_to(-2 * SIZE, 0)
-        ctx.close_path()
-
-        pass
 
 
 
 
 player = Player(0, 0)
-
-v = Vector(3, 6, 77)
-print(v)
-print(v * 2)
-
-player.a = pi / 4
-
-
 scene = Scene()
 
-scene.draw_pixel(0, 0, 0)
 
