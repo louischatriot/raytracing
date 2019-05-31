@@ -128,10 +128,15 @@ class Scene:
 
         win.show_all()
 
+
+    def set_player(self, player):
+        self.player = player
+
+
+    def start(self):
         thread = threading.Thread(target=self.animate)
         thread.daemon = True
         thread.start()
-
         # Start Gtk window (blocking call)
         Gtk.main()
 
@@ -143,6 +148,13 @@ class Scene:
             time.sleep(1)
 
 
+    # Color is a 3 numbers tuple or list
+    def draw_pixel(self, ctx, x, y, color):
+        ctx.rectangle(x, self.screen_H - y, 1, 1);
+        ctx.set_source_rgb(*color);
+        ctx.fill();
+
+
     # Screen is cleared right before this function gets called
     def draw_frame(self, da, ctx):
         c = (0.5, 0, 0.5)
@@ -152,26 +164,19 @@ class Scene:
 
 
 
-        self.draw_pixel(ctx, 40, 60, c)
+        self.draw_pixel(ctx, x, y, c)
 
 
-    # Given a player at a position and looking in a direction
+    # For this scene's player
     # and a pixel on the screen, return a Vector representing
     # this pixel on the virtual display
-    def get_point(self, player, screen_x, screen_y):
-        v, w, h = calc_vectors(player.a, player.t)
-        res = player.pos
+    def get_point(self, screen_x, screen_y):
+        v, w, h = calc_vectors(self.player.a, self.player.t)
+        res = self.player.pos
         res += v * self.display_d
         res += w * (self.display_W * (screen_x / self.screen_W - 0.5))
         res += h * (self.display_H * (screen_y / self.screen_H - 0.5))
         return res
-
-
-    # Color is a 3 numbers tuple or list
-    def draw_pixel(self, ctx, x, y, color):
-        ctx.rectangle(x, self.screen_H - y, 1, 1);
-        ctx.set_source_rgb(*color);
-        ctx.fill();
 
 
 
@@ -179,5 +184,6 @@ class Scene:
 
 player = Player(0, 0)
 scene = Scene()
-
+scene.set_player(player)
+scene.start()
 
