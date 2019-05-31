@@ -143,9 +143,13 @@ class Scene:
 
     def animate(self):
         while(True):
-            # Request animation frame
+            # Request animation frame and time it
+            t = time.time()
             self.drawingarea.queue_draw()
-            time.sleep(1)
+            e = time.time() - t
+            fps = 1 / e
+            print(f"FPS: {floor(fps)} ; frame time (ms): {floor(1000 * e)}")
+            time.sleep(5)
 
 
     # Color is a 3 numbers tuple or list
@@ -157,14 +161,14 @@ class Scene:
 
     # Screen is cleared right before this function gets called
     def draw_frame(self, da, ctx):
-        c = (0.5, 0, 0.5)
+        for x in range(0, self.screen_W):
+            for y in range(0, self.screen_H):
+                r = random.randrange(0, 100) / 100
+                g = random.randrange(0, 100) / 100
+                b = random.randrange(0, 100) / 100
+                c = (r, g, b)
 
-        x = random.randrange(0, self.screen_W)
-        y = random.randrange(0, self.screen_H)
-
-
-
-        self.draw_pixel(ctx, x, y, c)
+                self.draw_pixel(ctx, x, y, c)
 
 
     # For this scene's player
