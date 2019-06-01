@@ -21,8 +21,6 @@ import numpy as np
 SIZE = 30
 
 
-
-
 class Vector:
     def __init__(self, x, y, z):
         self.x = x
@@ -59,15 +57,9 @@ class Vector:
 # a = alpha = angle on (x, y)
 # t = theta = angle on ((x,y), z)
 def calc_vectors(a, t):
-    # v = Vector(cos(a) * cos(t), sin(a) * cos(t), sin(t))
-    # w = Vector(-v.y / cos(t), v.x / cos(t), 0)
-    # h = Vector(-sin(t) * cos(a), -sin(t) * sin(a), cos(t))
-
-
-    v = np.array([cos(a) * cos(t), sin(a) * cos(t), sin(t)])
-    w = np.array([- sin(a), cos(a), 0])
-    h = np.array([-sin(t) * cos(a), -sin(t) * sin(a), cos(t)])
-
+    v = Vector(cos(a) * cos(t), sin(a) * cos(t), sin(t))
+    w = Vector(-v.y / cos(t), v.x / cos(t), 0)
+    h = Vector(-sin(t) * cos(a), -sin(t) * sin(a), cos(t))
 
     return v, w, h
 
@@ -87,16 +79,9 @@ def intersect_sphere(e_p, m_p, sphere):
     # b = 2 * (m.x * ec.x + m.y * ec.y + m.z * ec.z)
     # c = ec.x ** 2 + ec.y ** 2 + ec.z ** 2 - r ** 2
 
-    # a = m.norm_squared()
-    # b = - 2 * (m ** ec)
-    # c = ec.norm_squared() - r ** 2
-
-    a = np.dot(m, m)
-    b = - 2 * np.dot(m, ec)
-    c = np.dot(ec, ec) - r ** 2
-
-
-
+    a = m.norm_squared()
+    b = - 2 * (m ** ec)
+    c = ec.norm_squared() - r ** 2
 
     d = b * b - 4 * a * c
     if d < 0:
@@ -104,7 +89,7 @@ def intersect_sphere(e_p, m_p, sphere):
 
     if d == 0:
         t = -b / (2 * a)
-        return e_p + m_p * t
+        return e + m * t
 
 
     t1 = (-b + sqrt(d)) / (2 * a)
@@ -113,7 +98,6 @@ def intersect_sphere(e_p, m_p, sphere):
     i1 = e_p + m_p * t1
     i2 = e_p + m_p * t2
 
-    # We should simply return t, not the point itself
     if (i1 - e_p).norm() > (i2 - e_p).norm():
         return i2
     else:
@@ -121,10 +105,10 @@ def intersect_sphere(e_p, m_p, sphere):
 
 
 class Player:
-    def __init__(self, a, t, pos):
+    def __init__(self, a, t, pos = None):
         self.a = a
         self.t = t
-        self.pos = pos
+        self.pos = pos or Vector(0, 0, 0)
 
 
 # center is a vector
@@ -141,7 +125,7 @@ class Light:
 
     # First test of lighting fitted to the specific sphere we used during tests
     def intensity(self, i):
-        d = np.linalg.norm(i - self.pos)
+        d = (i - self.pos).norm()
 
         _min = sqrt(17) - 0.6
         _max = sqrt(17) + 0.3
@@ -152,9 +136,9 @@ class Light:
     # normal is the normal vector on surface at point i
     def lambert(self, i, normal):
         l_v = i - self.pos
-        l_v = l_v / np.linalg.norm(l_v)
+        l_v = l_v.normalize()
 
-        intensity = - np.dot(l_v, normal)
+        intensity = - l_v ** normal
         intensity = max(0, intensity)
         return intensity
 
@@ -241,11 +225,11 @@ class Scene:
                 m_p = self.get_point(x, y)
                 i = intersect_sphere(e_p, m_p, self.sphere)
 
-                if i is not None:
-                    # intensity = self.light.intensity(i)
+                if i:
+                    intensity = self.light.intensity(i)
 
                     normal = i - self.sphere.center
-                    normal = normal / np.linalg.norm(normal)
+                    normal = normal.normalize()
 
                     intensity = self.light.lambert(i, normal)
 
@@ -281,12 +265,12 @@ class Scene:
 
 
 
-player = Player(pi/4, 0, np.array([0.0, 0.0, 0.0]))
+player = Player(pi/4, 0, Vector(0, 0, 0))
 scene = Scene(resolution=3)
 scene.set_player(player)
 
-sphere = Sphere(np.array([5.0, 5.0, 1.0]), 0.6)
-light = Light(np.array([4.0, 0.0, 0.0]))
+sphere = Sphere(Vector(5, 5, 1), 0.6)
+light = Light(Vector(4, 0, 0))
 
 scene.add_sphere(sphere)
 scene.add_light(light)
