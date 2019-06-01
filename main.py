@@ -32,6 +32,9 @@ class Vector:
     def norm(self):
         return sqrt(self.norm_squared())
 
+    def normalize(self):
+        return self * (1 / self.norm())
+
     def __str__(self):
         return f"<Vector> {self.x} ; {self.y} ; {self.z}"
 
@@ -120,6 +123,25 @@ class Light:
     def __init__(self, pos):
         self.pos = pos
 
+    # First test of lighting fitted to the specific sphere we used during tests
+    def intensity(self, i):
+        d = (i - self.pos).norm()
+
+        _min = sqrt(17) - 0.6
+        _max = sqrt(17) + 0.3
+
+        intensity = (_max - d) / (_max - _min) - 0.2
+        return intensity
+
+    # normal is the normal vector on surface at point i
+    def lambert(self, i, normal):
+        l_v = i - self.pos
+        l_v = l_v.normalize()
+
+        intensity = - l_v ** normal
+        intensity = max(0, intensity)
+        return intensity
+
 
 class Scene:
     # resolution controls image quality (and hence calculations required), needs to be >= 1
@@ -175,7 +197,7 @@ class Scene:
         while(True):
             # Request animation frame
             self.drawingarea.queue_draw()
-            time.sleep(8)
+            time.sleep(2)
 
 
     # Color is a 3 numbers tuple or list
@@ -187,45 +209,46 @@ class Scene:
 
     # Screen is cleared right before this function gets called
     def draw_frame(self, da, ctx):
-        t = time.time()
+        e = time.time()
+
+        t_calc = 0
+        t_render = 0
 
         for x in range(0, self.screen_W, self.resolution):
             for y in range(0, self.screen_H, self.resolution):
-                # r = random.randrange(0, 100) / 100
-                # g = random.randrange(0, 100) / 100
-                # b = random.randrange(0, 100) / 100
-                # color = (r, g, b)
+                # Calculate pixel color
+                t = time.time()
 
                 color = (0, 0, 0)
 
                 e_p = self.player.pos
                 m_p = self.get_point(x, y)
-
-                # print(f"{x} - {y} --- {m_p}")
-
                 i = intersect_sphere(e_p, m_p, self.sphere)
 
                 if i:
-                    d = (i - self.light.pos).norm()
+                    intensity = self.light.intensity(i)
 
+                    normal = i - self.sphere.center
+                    normal = normal.normalize()
 
-                    _min = sqrt(17) - 0.6
-                    _max = sqrt(17) + 0.3
+                    intensity = self.light.lambert(i, normal)
 
-
-                    intensity = (_max - d) / (_max - _min) - 0.2
-
-
-                    # print(f"{d} --- {intensity}")
                     color = (0, intensity, 0)
 
+                t_calc += time.time() - t
+
+                # Draw pixel
+                t = time.time()
 
                 self.draw_pixel(ctx, x, y, color)
 
+                t_calc += time.time() - t
+
         # Time drawing of frame
-        e = time.time() - t
+        # Note that timing the calculation vs render steps does add overhead
+        e = time.time() - e
         fps = 1 / e
-        print(f"FPS: {floor(fps)} ; frame time (ms): {floor(1000 * e)}")
+        print(f"FPS: {floor(fps)} ; frame time (ms): {floor(1000 * e)} ; calc time (ms): {floor(1000 * t_calc)} ; render time (ms): {floor(1000 * t_render)}")
 
     # For this scene's player
     # and a pixel on the screen, return a Vector representing
@@ -243,10 +266,10 @@ class Scene:
 
 
 player = Player(pi/4, 0, Vector(0, 0, 0))
-scene = Scene(resolution=1)
+scene = Scene(resolution=3)
 scene.set_player(player)
 
-sphere = Sphere(Vector(4, 4, 1), 0.6)
+sphere = Sphere(Vector(5, 5, 1), 0.6)
 light = Light(Vector(4, 0, 0))
 
 scene.add_sphere(sphere)
