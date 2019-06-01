@@ -1,4 +1,7 @@
 from math import cos, sin, pi, sqrt, floor
+import threading
+import time
+import random
 
 # sudo apt-get install cairo
 # pip install pycairo
@@ -10,14 +13,37 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
-import threading
-import time
-
-import random
+# pip install numpy
+import numpy as np
 
 
 # For testing
 SIZE = 30
+
+
+
+
+a = np.array([1, 2, 3])
+b = np.array([1000, 100, 10])
+
+
+
+
+
+print(a)
+
+
+
+print(b - a)
+
+print(2 * a)
+print(a / 2)
+
+
+print(np.dot(a, b))
+
+
+# 1/0
 
 
 class Vector:
@@ -56,9 +82,15 @@ class Vector:
 # a = alpha = angle on (x, y)
 # t = theta = angle on ((x,y), z)
 def calc_vectors(a, t):
+    # v = Vector(cos(a) * cos(t), sin(a) * cos(t), sin(t))
+    # w = Vector(-v.y / cos(t), v.x / cos(t), 0)
+    # h = Vector(-sin(t) * cos(a), -sin(t) * sin(a), cos(t))
+
+
     v = Vector(cos(a) * cos(t), sin(a) * cos(t), sin(t))
-    w = Vector(-v.y / cos(t), v.x / cos(t), 0)
+    w = Vector(- sin(a), cos(a), 0)
     h = Vector(-sin(t) * cos(a), -sin(t) * sin(a), cos(t))
+
 
     return v, w, h
 
@@ -82,7 +114,6 @@ def intersect_sphere(e_p, m_p, sphere):
     b = - 2 * (m ** ec)
     c = ec.norm_squared() - r ** 2
 
-    # print("==================")
     d = b * b - 4 * a * c
     if d < 0:
         return None
