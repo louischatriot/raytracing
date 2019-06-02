@@ -14,11 +14,21 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 # pip install numpy
+# Unused for now
 import numpy as np
 
+# For my machine to support openCL
+# Kernel >= v 4.11 (OK I have v4.15)
 
-# For testing
-SIZE = 30
+
+# Using Miniconda
+# conda config --add channels conda-forge
+# conda install pycairo
+# conda install pygobject
+
+# This one is not in conda-forge
+# conda install -c pkgw-forge gtk3
+
 
 
 class Vector:
