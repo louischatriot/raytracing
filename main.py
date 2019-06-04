@@ -185,6 +185,9 @@ class Scene:
         # Misc
         self.resolution = resolution
 
+        # Object
+        self.spheres = []
+
 
     def set_player(self, player):
         self.player = player
@@ -192,7 +195,7 @@ class Scene:
 
     # Later we'll be able to have many spheres
     def add_sphere(self, sphere):
-        self.sphere = sphere
+        self.spheres.append(sphere)
 
 
     # Later we'll be able to add many lights
@@ -254,17 +257,19 @@ class Scene:
 
                 e_p = self.player.pos
                 m_p = self.get_point(x, y)
-                i = intersect_sphere(e_p, m_p, self.sphere)
 
-                if i:
-                    intensity = self.light.intensity(i)
+                for sphere in self.spheres:
+                    i = intersect_sphere(e_p, m_p, sphere)
 
-                    normal = i - self.sphere.center
-                    normal = normal.normalize()
+                    if i:
+                        intensity = self.light.intensity(i)
 
-                    intensity = self.light.lambert(i, normal)
+                        normal = i - sphere.center
+                        normal = normal.normalize()
 
-                    color = (0, intensity, 0)
+                        intensity = self.light.lambert(i, normal)
+
+                        color = (0, intensity, 0)
 
                 t_calc += time.time() - t
 
@@ -300,10 +305,12 @@ player = Player(pi/4, 0, Vector(0, 0, 0))
 scene = Scene(resolution=3)
 scene.set_player(player)
 
-sphere = Sphere(Vector(5, 5, 1), 0.6)
+s1 = Sphere(Vector(5, 5, 1), 0.6)
+s2 = Sphere(Vector(3, 5, 0), 0.8)
 light = Light(Vector(4, 0, 0))
 
-scene.add_sphere(sphere)
+scene.add_sphere(s1)
+scene.add_sphere(s2)
 scene.add_light(light)
 
 
