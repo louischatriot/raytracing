@@ -161,11 +161,9 @@ class Light:
     # normal is the normal vector on surface at point i
     def lambert(self, i, normal):
         l_v = i - self.pos
-        l_v = l_v.normalize()
-
-        intensity = - l_v ** normal
-        intensity = max(0, intensity)
-        return intensity
+        # Normalized scalar product
+        intensity = - l_v ** normal * (1 / sqrt(normal.norm_squared() * l_v.norm_squared()))
+        return intensity if intensity > 0 else 0
 
 
 class Scene:
@@ -297,42 +295,10 @@ class Scene:
                 color = None
 
                 for sphere in self.spheres:
-                    # i = None
-                    # _t = None
-
-                    # c_p = sphere.center
-                    # r = sphere.radius
-
-                    # m = m_p - e_p
-                    # ec = c_p - e_p
-
-                    # a = m.norm_squared()
-                    # b = - 2 * (m ** ec)
-                    # c = ec.norm_squared() - r ** 2
-
-                    # d = b * b - 4 * a * c
-
-                    # if d == 0:
-                        # _t = -b / (2 * a)
-                    # elif d > 0:
-                        # # No need to calculate both roots of the equation
-                        # # We want the closest point that is not behind us
-                        # ds = sqrt(d)
-
-                        # if - b - ds > 0:
-                            # _t = (-b - ds) / (2 * a)
-                        # else:
-                            # _t = (-b + ds) / (2 * a)
-
-                    # if _t is not None:
-                        # i = e_p + m_p * _t
-
-
                     i = intersect_sphere(e_p, m_p, sphere)
 
                     if i:
                         normal = i - sphere.center
-                        normal = normal.normalize()
                         intensity = self.light.lambert(i, normal)
                         color = (0, intensity, 0)
 
@@ -364,12 +330,12 @@ class Scene:
     # and a pixel on the screen, return a Vector representing
     # this pixel on the virtual display
     # v, w, h are the direction vectors
+    # Not used anymore, calculation directly done within the loop
     def get_point(self, screen_x, screen_y, v, w, h):
-        # res = self.player.pos
-        # res += v * self.display_d
-        # res = w * (self.display_W * (screen_x / self.screen_W - 0.5))
-        # res += h * (self.display_H * (screen_y / self.screen_H - 0.5))
-
+        res = self.player.pos
+        res += v * self.display_d
+        res = w * (self.display_W * (screen_x / self.screen_W - 0.5))
+        res += h * (self.display_H * (screen_y / self.screen_H - 0.5))
         return res
 
 
