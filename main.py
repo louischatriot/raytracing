@@ -125,6 +125,9 @@ class Player:
         self.t = t
         self.pos = pos or Vector(0, 0, 0)
 
+        self.view_speed = 0.06
+        self.move_speed = 0.08
+
 
 # center is a vector
 class Sphere:
@@ -212,6 +215,8 @@ class Scene:
 
 
     def animate(self):
+        p = self.player
+
         while(True):
             # Request animation frame
             self.drawingarea.queue_draw()
@@ -220,16 +225,24 @@ class Scene:
             print(key)
 
             if key == "left":
-                self.player.a += 0.06
+                p.a += p.view_speed
 
             if key == "right":
-                self.player.a -= 0.06
+                p.a -= p.view_speed
 
             if key == "up":
-                self.player.t += 0.06
+                p.t += p.view_speed
 
             if key == "down":
-                self.player.t -= 0.06
+                p.t -= p.view_speed
+
+            if key == "q":
+                p.pos.x += p.move_speed * sin(p.a) * (-1)
+                p.pos.y += p.move_speed * cos(p.a)
+
+            if key == "d":
+                p.pos.x += p.move_speed * sin(p.a)
+                p.pos.y += p.move_speed * cos(p.a) * (-1)
 
             time.sleep(0.2)
 
@@ -248,27 +261,33 @@ class Scene:
         t_calc = 0
         t_render = 0
 
+        e_p = self.player.pos
+        v, w, h = calc_vectors(self.player.a, self.player.t)
+
+        # Bottom left pixel of virtual display
+        m_p = self.player.pos + v * self.display_d
+        m_p += h * (self.display_H * (-0.5))
+        m_p += w * (self.display_W * (-0.5))
+
+        delta_h = h * (self.display_H * self.resolution / self.screen_H)
+        delta_w = w * (self.display_W * self.resolution / self.screen_W)
+
         for x in range(0, self.screen_W, self.resolution):
+            reset_h = 0
+
             for y in range(0, self.screen_H, self.resolution):
                 # Calculate pixel color
                 t = time.time()
 
                 color = (0, 0, 0)
 
-                e_p = self.player.pos
-                m_p = self.get_point(x, y)
-
                 for sphere in self.spheres:
                     i = intersect_sphere(e_p, m_p, sphere)
 
                     if i:
-                        intensity = self.light.intensity(i)
-
                         normal = i - sphere.center
                         normal = normal.normalize()
-
                         intensity = self.light.lambert(i, normal)
-
                         color = (0, intensity, 0)
 
                 t_calc += time.time() - t
@@ -280,6 +299,14 @@ class Scene:
 
                 t_calc += time.time() - t
 
+                # Move virtual pixel up by 1px
+                m_p += delta_h
+                reset_h += 1
+
+            # Move virtual pixel left by 1px and put it on the bottom of the screen
+            m_p -= delta_h * reset_h
+            m_p += delta_w
+
         # Time drawing of frame
         # Note that timing the calculation vs render steps does add overhead
         e = time.time() - e
@@ -289,12 +316,13 @@ class Scene:
     # For this scene's player
     # and a pixel on the screen, return a Vector representing
     # this pixel on the virtual display
-    def get_point(self, screen_x, screen_y):
-        v, w, h = calc_vectors(self.player.a, self.player.t)
-        res = self.player.pos
-        res += v * self.display_d
-        res += w * (self.display_W * (screen_x / self.screen_W - 0.5))
-        res += h * (self.display_H * (screen_y / self.screen_H - 0.5))
+    # v, w, h are the direction vectors
+    def get_point(self, screen_x, screen_y, v, w, h):
+        # res = self.player.pos
+        # res += v * self.display_d
+        # res = w * (self.display_W * (screen_x / self.screen_W - 0.5))
+        # res += h * (self.display_H * (screen_y / self.screen_H - 0.5))
+
         return res
 
 
