@@ -91,7 +91,7 @@ def intersect_sphere(e_p, m_p, sphere):
     ec = c_p - e_p
 
     # a = m.x * m.x + m.y * m.y + m.z * m.z
-    # b = 2 * (m.x * ec.x + m.y * ec.y + m.z * ec.z)
+    # b = - 2 * (m.x * ec.x + m.y * ec.y + m.z * ec.z)
     # c = ec.x ** 2 + ec.y ** 2 + ec.z ** 2 - r ** 2
 
     a = m.norm_squared()
@@ -106,17 +106,17 @@ def intersect_sphere(e_p, m_p, sphere):
         t = -b / (2 * a)
         return e + m * t
 
+    # No need to calculate both roots of the equation
+    # We want the closest point that is not behind us
+    ds = sqrt(d)
 
-    t1 = (-b + sqrt(d)) / (2 * a)
-    t2 = (-b - sqrt(d)) / (2 * a)
-
-    i1 = e_p + m_p * t1
-    i2 = e_p + m_p * t2
-
-    if (i1 - e_p).norm() > (i2 - e_p).norm():
-        return i2
+    if - b - ds > 0:
+        t = (-b - ds) / (2 * a)
     else:
-        return i1
+        t = (-b + ds) / (2 * a)
+
+    i = e_p + m_p * t
+    return i
 
 
 class Player:
