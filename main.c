@@ -1,18 +1,35 @@
 #include <stdio.h>
-#include<graphics.h>
-#include<conio.h>
+#include <time.h>
 
 int main() {
+
     printf("Hello, world!\n");
 
-    int gd = DETECT, gm;
+    clock_t begin = clock();
 
-    initgraph(&gd, &gm, "C:\\TC\\BGI");
+    float res = 0;
+    int N = 10000000;
+    int i;
+    for (i = 0; i < N; i ++) {
+        if (i % 2 == 0) {
+            res += (float)i;
+        } else {
+            res -= (float)i;
+        }
+    }
 
-    putpixel(25, 25, RED);
 
-    getch();
-    closegraph();
+    clock_t end = clock();
+
+
+    printf("Result: %f\n", res);
+
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    time_spent *= 1000;
+
+
+
+    printf("time_spent (ms): %f\n", time_spent);
 
     return 0;
 }

@@ -17,6 +17,10 @@ from gi.repository import Gtk
 # Unused for now
 import numpy as np
 
+# pip install keyboard
+# Need to be root to execute script
+import keyboard
+
 # For my machine to support openCL
 # Kernel >= v 4.11 (OK I have v4.15)
 
@@ -28,6 +32,7 @@ import numpy as np
 
 # This one is not in conda-forge
 # conda install -c pkgw-forge gtk3
+
 
 
 
@@ -68,7 +73,7 @@ class Vector:
 # t = theta = angle on ((x,y), z)
 def calc_vectors(a, t):
     v = Vector(cos(a) * cos(t), sin(a) * cos(t), sin(t))
-    w = Vector(-v.y / cos(t), v.x / cos(t), 0)
+    w = Vector(-v.y / cos(t), v.x / cos(t), 0) * (-1)
     h = Vector(-sin(t) * cos(a), -sin(t) * sin(a), cos(t))
 
     return v, w, h
@@ -207,7 +212,23 @@ class Scene:
         while(True):
             # Request animation frame
             self.drawingarea.queue_draw()
-            time.sleep(2)
+
+            key = keyboard.read_key()
+            print(key)
+
+            if key == "left":
+                self.player.a += 0.06
+
+            if key == "right":
+                self.player.a -= 0.06
+
+            if key == "up":
+                self.player.t += 0.06
+
+            if key == "down":
+                self.player.t -= 0.06
+
+            time.sleep(0.2)
 
 
     # Color is a 3 numbers tuple or list
