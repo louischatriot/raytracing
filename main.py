@@ -88,11 +88,18 @@ def intersect_sphere(e_p, m_p, sphere):
     r = sphere.radius
 
     m = m_p - e_p
+
+    # m = Vector(m_p.x - e_p.x, m_p.y - e_p.y, m_p.z - e_p.z)
+
     ec = c_p - e_p
 
     # a = m.x * m.x + m.y * m.y + m.z * m.z
     # b = - 2 * (m.x * ec.x + m.y * ec.y + m.z * ec.z)
     # c = ec.x ** 2 + ec.y ** 2 + ec.z ** 2 - r ** 2
+
+    a = 1
+    b = 1
+    c = 1
 
     a = m.norm_squared()
     b = - 2 * (m ** ec)
@@ -254,12 +261,20 @@ class Scene:
         ctx.fill();
 
 
+    def fill_canvas(self, ctx, color):
+        ctx.rectangle(0, 0, self.screen_W, self.screen_H);
+        ctx.set_source_rgb(*color);
+        ctx.fill();
+
+
     # Screen is cleared right before this function gets called
     def draw_frame(self, da, ctx):
         e = time.time()
 
         t_calc = 0
         t_render = 0
+
+        self.fill_canvas(ctx, (0, 0, 0))
 
         e_p = self.player.pos
         v, w, h = calc_vectors(self.player.a, self.player.t)
@@ -279,9 +294,40 @@ class Scene:
                 # Calculate pixel color
                 t = time.time()
 
-                color = (0, 0, 0)
+                color = None
 
                 for sphere in self.spheres:
+                    # i = None
+                    # _t = None
+
+                    # c_p = sphere.center
+                    # r = sphere.radius
+
+                    # m = m_p - e_p
+                    # ec = c_p - e_p
+
+                    # a = m.norm_squared()
+                    # b = - 2 * (m ** ec)
+                    # c = ec.norm_squared() - r ** 2
+
+                    # d = b * b - 4 * a * c
+
+                    # if d == 0:
+                        # _t = -b / (2 * a)
+                    # elif d > 0:
+                        # # No need to calculate both roots of the equation
+                        # # We want the closest point that is not behind us
+                        # ds = sqrt(d)
+
+                        # if - b - ds > 0:
+                            # _t = (-b - ds) / (2 * a)
+                        # else:
+                            # _t = (-b + ds) / (2 * a)
+
+                    # if _t is not None:
+                        # i = e_p + m_p * _t
+
+
                     i = intersect_sphere(e_p, m_p, sphere)
 
                     if i:
@@ -295,7 +341,8 @@ class Scene:
                 # Draw pixel
                 t = time.time()
 
-                self.draw_pixel(ctx, x, y, color)
+                if color:
+                    self.draw_pixel(ctx, x, y, color)
 
                 t_calc += time.time() - t
 
