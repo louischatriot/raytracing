@@ -19,19 +19,36 @@ import numpy as np
 
 # pip install keyboard
 # Need to be root to execute script
-import keyboard
+# import keyboard
 
 # For my machine to support openCL
 # Kernel >= v 4.11 (OK I have v4.15)
 
 
 # Using Miniconda
+
+# Activating Conda
+# source ../../miniconda3/bin/activate
+
+# (one off) Creating the environment
+# conda create -n raytracing python=3.7
+
+# Activating the environment
+# conda activate raytracing
+
+# Install packages
 # conda config --add channels conda-forge
 # conda install pycairo
 # conda install pygobject
 
 # This one is not in conda-forge
 # conda install -c pkgw-forge gtk3
+
+# To capture keyboard input
+# conda install -c cogsci pygame
+
+
+# import pygame
 
 
 
@@ -79,53 +96,6 @@ def calc_vectors(a, t):
     return v, w, h
 
 
-
-# Returns closest intersection point from eye direction to sphere if any
-# e_p (vector) = point E, the eye
-# m_p (vector) = point M, the pixel on the screen
-def intersect_sphere(e_p, m_p, sphere):
-    c_p = sphere.center
-    r = sphere.radius
-
-    m = m_p - e_p
-
-    # m = Vector(m_p.x - e_p.x, m_p.y - e_p.y, m_p.z - e_p.z)
-
-    ec = c_p - e_p
-
-    # a = m.x * m.x + m.y * m.y + m.z * m.z
-    # b = - 2 * (m.x * ec.x + m.y * ec.y + m.z * ec.z)
-    # c = ec.x ** 2 + ec.y ** 2 + ec.z ** 2 - r ** 2
-
-    a = 1
-    b = 1
-    c = 1
-
-    a = m.norm_squared()
-    b = - 2 * (m ** ec)
-    c = ec.norm_squared() - r ** 2
-
-    d = b * b - 4 * a * c
-    if d < 0:
-        return None
-
-    if d == 0:
-        t = -b / (2 * a)
-        return e + m * t
-
-    # No need to calculate both roots of the equation
-    # We want the closest point that is not behind us
-    ds = sqrt(d)
-
-    if - b - ds > 0:
-        t = (-b - ds) / (2 * a)
-    else:
-        t = (-b + ds) / (2 * a)
-
-    i = e_p + m_p * t
-    return i
-
-
 class Player:
     def __init__(self, a, t, pos = None):
         self.a = a
@@ -141,6 +111,93 @@ class Sphere:
     def __init__(self, center, radius):
         self.center = center
         self.radius = radius
+
+    # Returns closest intersection point from eye direction to sphere if any
+    # e_p (vector) = point E, the eye
+    # m_p (vector) = point M, the pixel on the screen
+    def intersect_ray(self, e_p, m_p):
+        c_p = self.center
+        r = self.radius
+
+        m = m_p - e_p
+
+        # m = Vector(m_p.x - e_p.x, m_p.y - e_p.y, m_p.z - e_p.z)
+
+        ec = c_p - e_p
+
+        # a = m.x * m.x + m.y * m.y + m.z * m.z
+        # b = - 2 * (m.x * ec.x + m.y * ec.y + m.z * ec.z)
+        # c = ec.x ** 2 + ec.y ** 2 + ec.z ** 2 - r ** 2
+
+        a = 1
+        b = 1
+        c = 1
+
+        a = m.norm_squared()
+        b = - 2 * (m ** ec)
+        c = ec.norm_squared() - r ** 2
+
+        d = b * b - 4 * a * c
+        if d < 0:
+            return None
+
+        if d == 0:
+            t = -b / (2 * a)
+            return e + m * t
+
+        # No need to calculate both roots of the equation
+        # We want the closest point that is not behind us
+        ds = sqrt(d)
+
+        if - b - ds > 0:
+            t = (-b - ds) / (2 * a)
+        else:
+            t = (-b + ds) / (2 * a)
+
+        i = e_p + m_p * t
+        return i
+
+
+# a, b, c are vectors
+class Triangle:
+    def __init__(self, a, b, c):
+        self.a = a
+        self.b = b
+        self.c = c
+
+        self.normal = self.get_normal()
+
+    # Solving the three linear equations system
+    def intersect_ray(self, e, m):
+        av = self.b - self.a
+        bv = self.c - self.b
+        v = m - e
+
+        matrix = np.array([[av.x, bv.x, - v.x], [av.y, bv.y, - v.y], [av.z, bv.z, - v.z]])
+        ret = np.array([e.x - self.a.x, e.y - self.a.y, e.z - self.a.z])
+
+        res = np.linalg.solve(matrix, ret)
+
+        a = res[0]
+        b = res[1]
+        t = res[2]
+
+        i = e + v * t
+
+        if a > 0 and b > 0 and a <= 1 and b <= a:
+            return i
+        else:
+            return None
+
+    # Should get normal *from a point of view*
+    # Not normalized, norm could be different from 1
+    def get_normal(self):
+        av = self.b - self.a
+        bv = self.c - self.b
+
+        # Need to switch entirely to numpy ...
+        c = np.cross([av.x, av.y, av.z], [bv.x, bv.y, bv.z])
+        return Vector(c[0], c[1], c[2])
 
 
 # pos is a vector
@@ -193,17 +250,22 @@ class Scene:
         # Misc
         self.resolution = resolution
 
-        # Object
+        # Objects and lights
         self.spheres = []
+        self.light = None
+        self.triangles = []
 
 
     def set_player(self, player):
         self.player = player
 
 
-    # Later we'll be able to have many spheres
     def add_sphere(self, sphere):
         self.spheres.append(sphere)
+
+
+    def add_triangle(self, triangle):
+        self.triangles.append(triangle)
 
 
     # Later we'll be able to add many lights
@@ -221,6 +283,9 @@ class Scene:
 
     def animate(self):
         p = self.player
+
+        self.drawingarea.queue_draw()
+        return
 
         while(True):
             # Request animation frame
@@ -274,8 +339,8 @@ class Scene:
 
         self.fill_canvas(ctx, (0, 0, 0))
 
-        e_p = self.player.pos
         v, w, h = calc_vectors(self.player.a, self.player.t)
+        e_p = self.player.pos
 
         # Bottom left pixel of virtual display
         m_p = self.player.pos + v * self.display_d
@@ -294,13 +359,21 @@ class Scene:
 
                 color = None
 
-                for sphere in self.spheres:
-                    i = intersect_sphere(e_p, m_p, sphere)
+                # for sphere in self.spheres:
+                    # i = sphere.intersect_ray(e_p, m_p)
+
+                    # if i:
+                        # normal = i - sphere.center
+                        # intensity = self.light.lambert(i, normal)
+                        # color = (0, intensity, 0)
+
+                for triangle in self.triangles:
+                    i = triangle.intersect_ray(e_p, m_p)
 
                     if i:
-                        normal = i - sphere.center
-                        intensity = self.light.lambert(i, normal)
+                        intensity = self.light.lambert(i, triangle.normal)
                         color = (0, intensity, 0)
+
 
                 t_calc += time.time() - t
 
@@ -334,7 +407,7 @@ class Scene:
     def get_point(self, screen_x, screen_y, v, w, h):
         res = self.player.pos
         res += v * self.display_d
-        res = w * (self.display_W * (screen_x / self.screen_W - 0.5))
+        res += w * (self.display_W * (screen_x / self.screen_W - 0.5))
         res += h * (self.display_H * (screen_y / self.screen_H - 0.5))
         return res
 
@@ -348,10 +421,12 @@ scene.set_player(player)
 
 s1 = Sphere(Vector(5, 5, 1), 0.6)
 s2 = Sphere(Vector(3, 5, 0), 0.8)
-light = Light(Vector(4, 0, 0))
+light = Light(Vector(0, 0, 0))
+t1 = Triangle(Vector(1.5, 2.5, 0), Vector(2.5, 1.5, 0), Vector(4, 4, 1))
 
-scene.add_sphere(s1)
-scene.add_sphere(s2)
+# scene.add_sphere(s1)
+# scene.add_sphere(s2)
+scene.add_triangle(t1)
 scene.add_light(light)
 
 
