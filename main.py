@@ -329,9 +329,12 @@ class Scene:
         ctx.set_source_rgb(*color);
         ctx.fill();
 
+    def draw_frame(self, da, ctx):
+        # self.draw_frame_raytracing(da, ctx)
+        self.draw_frame_rasterize(da, ctx)
 
     # Screen is cleared right before this function gets called
-    def draw_frame(self, da, ctx):
+    def draw_frame_raytracing(self, da, ctx):
         e = time.time()
 
         t_calc = 0
@@ -359,13 +362,15 @@ class Scene:
 
                 color = None
 
-                # for sphere in self.spheres:
-                    # i = sphere.intersect_ray(e_p, m_p)
+                # Should handle visibility problem ...
 
-                    # if i:
-                        # normal = i - sphere.center
-                        # intensity = self.light.lambert(i, normal)
-                        # color = (0, intensity, 0)
+                for sphere in self.spheres:
+                    i = sphere.intersect_ray(e_p, m_p)
+
+                    if i:
+                        normal = i - sphere.center
+                        intensity = self.light.lambert(i, normal)
+                        color = (0, intensity, 0)
 
                 for triangle in self.triangles:
                     i = triangle.intersect_ray(e_p, m_p)
@@ -412,7 +417,54 @@ class Scene:
         return res
 
 
+    def draw_frame_rasterize(self, da, ctx):
+        draw_time = time.time()
+        self.fill_canvas(ctx, (0, 0, 0))
 
+        v_v, w_v, h_v = calc_vectors(self.player.a, self.player.t)
+        e = self.player.pos
+        bl = self.get_point(0, 0, v_v, w_v, h_v)
+
+        for triangle in self.triangles:
+            a_display = self.find_display_pixel(e, triangle.a, bl, w_v, h_v)
+            print(a_display)
+
+
+            b_display = self.find_display_pixel(e, triangle.b, bl, w_v, h_v)
+            print(b_display)
+
+
+            c_display = self.find_display_pixel(e, triangle.c, bl, w_v, h_v)
+            print(c_display)
+
+
+        draw_time = time.time() - draw_time
+        fps = 1 / draw_time
+        print(f"FPS: {floor(fps)} ; frame time (ms): {floor(1000 * draw_time)}")
+
+
+    # Virtual display is defined by its bottom left corner bl, its width vector w_v and its height vector h_v
+    # e is the eye
+    # m is the real point for which we want to find the corresponding pixel
+    def find_display_pixel(self, e, m, bl, w_v, h_v):
+        em_v = m - e
+
+        matrix = np.array([[w_v.x, h_v.x, - em_v.x], [w_v.y, h_v.y, - em_v.y], [w_v.z, h_v.z, - em_v.z]])
+        ret = np.array([e.x - bl.x, e.y - bl.y, e.z - bl.z])
+
+        res = np.linalg.solve(matrix, ret)
+
+        w = res[0]
+        h = res[1]
+        t = res[2]
+
+        # Ignoring case where triangle is fully or partially behind observer
+        # if t <= 0:
+            # return None
+
+        # Ignoring case where point is out of the screen (w or h not in [0, 1])
+
+        return (round(w * self.screen_W), round(h * self.screen_H))
 
 
 player = Player(pi/4, 0, Vector(0, 0, 0))
@@ -424,8 +476,8 @@ s2 = Sphere(Vector(3, 5, 0), 0.8)
 light = Light(Vector(0, 0, 0))
 t1 = Triangle(Vector(1.5, 2.5, 0), Vector(2.5, 1.5, 0), Vector(4, 4, 1))
 
-# scene.add_sphere(s1)
-# scene.add_sphere(s2)
+scene.add_sphere(s1)
+scene.add_sphere(s2)
 scene.add_triangle(t1)
 scene.add_light(light)
 
