@@ -57,7 +57,7 @@ import numpy as np
 # i = 0
 
 # while True:
-    # cos(4)
+    # 2 / 4.32764
     # i += 1
     # if i >= N:
         # break
@@ -252,7 +252,7 @@ class Scene:
         # Meters
         self.display_d = 1
         self.display_W = 1
-        self.display_H = 0.75
+        self.display_H = 0.8
 
         # Screen (a gtk window)
         self.screen_W = 800
@@ -507,11 +507,9 @@ class Scene:
     # e is the eye
     # m is the real point for which we want to find the corresponding pixel
     def find_display_pixel(self, e, m, bl, w_v, h_v):
-        em_v = m - e
-
-        matrix = np.array([[w_v.x, h_v.x, - em_v.x], [w_v.y, h_v.y, - em_v.y], [w_v.z, h_v.z, - em_v.z]])
+        me_v = e - m
+        matrix = np.array([[w_v.x, h_v.x, me_v.x], [w_v.y, h_v.y, me_v.y], [w_v.z, h_v.z, me_v.z]])
         ret = np.array([e.x - bl.x, e.y - bl.y, e.z - bl.z])
-
         res = np.linalg.solve(matrix, ret)
 
         w = res[0]
@@ -524,17 +522,22 @@ class Scene:
 
         # Ignoring case where point is out of the screen (w or h not in [0, 1])
 
-        return (int(round(w * self.screen_W)), int(round(h * self.screen_H)))
+        x = int(round(self.screen_W * w * w_v.norm() / self.display_W))
+        y = int(round(self.screen_H * h * h_v.norm() / self.display_H))
+
+        return (x, y)
 
 
-player = Player(pi/4, 0, Vector(0, 0, 0))
-scene = Scene(resolution=3, method=Method.RASTERIZING)
+
+player = Player(0, 0, Vector(0, 0, 0))
+scene = Scene(resolution=1, method=Method.RASTERIZING)
+# scene = Scene(resolution=3, method=Method.RAYTRACING)
 scene.set_player(player)
 
 s1 = Sphere(Vector(5, 5, 1), 0.6)
 s2 = Sphere(Vector(3, 5, 0), 0.8)
 light = Light(Vector(0, 0, 0))
-t1 = Triangle(Vector(1.5, 2.5, 0), Vector(2.5, 1.5, 0), Vector(4, 4, 1))
+t1 = Triangle(Vector(5, 2, 0), Vector(5, -2, 0), Vector(8, 0, 3))
 
 scene.add_sphere(s1)
 scene.add_sphere(s2)
