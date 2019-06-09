@@ -1,4 +1,4 @@
-from math import cos, sin, pi, sqrt, floor
+from math import *
 import threading
 import time
 import random
@@ -49,6 +49,25 @@ import numpy as np
 
 
 # import pygame
+
+
+# t = time.time()
+
+# N = 10000
+# i = 0
+
+# while True:
+    # cos(4)
+    # i += 1
+    # if i >= N:
+        # break
+
+
+
+# t = time.time() - t
+# print(t * 1000)
+
+# 1/0
 
 
 
@@ -426,16 +445,58 @@ class Scene:
         bl = self.get_point(0, 0, v_v, w_v, h_v)
 
         for triangle in self.triangles:
-            a_display = self.find_display_pixel(e, triangle.a, bl, w_v, h_v)
-            print(a_display)
+            a = self.find_display_pixel(e, triangle.a, bl, w_v, h_v)
+            b = self.find_display_pixel(e, triangle.b, bl, w_v, h_v)
+            c = self.find_display_pixel(e, triangle.c, bl, w_v, h_v)
+
+            ab = (b[0] - a[0], b[1] - a[1])
+            ac = (c[0] - a[0], c[1] - a[1])
+
+            div = ab[1] * ac[0] - ab[0] * ac[1]
+
+            # This means ab and ac are parallel, hence triangle should not be displayed at all (it's a zero-width line)
+            if div == 0:
+                continue
+
+            # Rough boxing
+            min_x = min(a[0], b[0], c[0])
+            max_x = max(a[0], b[0], c[0])
+            min_y = min(a[1], b[1], c[1])
+            max_y = max(a[1], b[1], c[1])
+
+            if min_x < 0:
+                min_x = 0
+
+            if min_y < 0:
+                min_y = 0
+
+            if max_x > self.screen_W:
+                max_x = self.screen_W
+
+            if max_y > self.screen_H:
+                max_y = self.screen_H
+
+            for x in range(min_x, max_x + 1, self.resolution):
+                for y in range(min_y, max_y + 1, self.resolution):
+                    am = (x - a[0], y - a[1])
 
 
-            b_display = self.find_display_pixel(e, triangle.b, bl, w_v, h_v)
-            print(b_display)
+                    gamma = (ab[1] * am[0] - ab[0] * am[1]) / div
+
+                    # Vector AB can't be null or div would be null
+                    if ab[0] != 0:
+                        alpha = (am[0] - ac[0] * gamma) / ab[0]
+                    else:
+                        alpha = (am[1] - ac[1] * gamma) / ab[1]
 
 
-            c_display = self.find_display_pixel(e, triangle.c, bl, w_v, h_v)
-            print(c_display)
+
+
+                    color = (0, 0.5, 0)
+
+
+                    if color:
+                        self.draw_pixel(ctx, x, y, color)
 
 
         draw_time = time.time() - draw_time
@@ -464,7 +525,7 @@ class Scene:
 
         # Ignoring case where point is out of the screen (w or h not in [0, 1])
 
-        return (round(w * self.screen_W), round(h * self.screen_H))
+        return (int(round(w * self.screen_W)), int(round(h * self.screen_H)))
 
 
 player = Player(pi/4, 0, Vector(0, 0, 0))
