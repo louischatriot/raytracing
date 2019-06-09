@@ -522,11 +522,23 @@ class Scene:
 
         # Ignoring case where point is out of the screen (w or h not in [0, 1])
 
-        x = int(round(self.screen_W * w * w_v.norm() / self.display_W))
-        y = int(round(self.screen_H * h * h_v.norm() / self.display_H))
+        # Assuming w_v and h_v have norm 1
+        x = int(round(self.screen_W * w / self.display_W))
+        y = int(round(self.screen_H * h / self.display_H))
 
         return (x, y)
 
+    # Assuming v_v has norm 1
+    def find_z_index(self, e, m, v_v, w_v, h_v):
+        em_v = m - e
+        matrix = np.array([[v_v.x, w_v.x, h_v.x], [v_v.y, w_v.y, h_v.y], [v_v.z, w_v.z, h_v.z]])
+        ret = np.array([em_v.x, em_v.y, em_v.z])
+
+        res = np.linalg.solve(matrix, ret)
+
+        v = res[0]
+
+        return v
 
 
 player = Player(0, 0, Vector(0, 0, 0))
