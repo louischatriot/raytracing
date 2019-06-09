@@ -241,10 +241,13 @@ class Light:
         intensity = - l_v ** normal * (1 / sqrt(normal.norm_squared() * l_v.norm_squared()))
         return intensity if intensity > 0 else 0
 
+class Method:
+    RASTERIZING = "rasterizing"
+    RAYTRACING = "raytracing"
 
 class Scene:
     # resolution controls image quality (and hence calculations required), needs to be >= 1
-    def __init__(self, resolution=1):
+    def __init__(self, resolution=1, method=Method.RASTERIZING):
         # Virtual display in front of observer eyes
         # Meters
         self.display_d = 1
@@ -268,6 +271,7 @@ class Scene:
 
         # Misc
         self.resolution = resolution
+        self.method = method
 
         # Objects and lights
         self.spheres = []
@@ -349,8 +353,10 @@ class Scene:
         ctx.fill();
 
     def draw_frame(self, da, ctx):
-        # self.draw_frame_raytracing(da, ctx)
-        self.draw_frame_rasterize(da, ctx)
+        if self.method == Method.RAYTRACING:
+            self.draw_frame_raytracing(da, ctx)
+        else:
+            self.draw_frame_rasterize(da, ctx)
 
     # Screen is cleared right before this function gets called
     def draw_frame_raytracing(self, da, ctx):
@@ -479,8 +485,6 @@ class Scene:
             for x in range(min_x, max_x + 1, self.resolution):
                 for y in range(min_y, max_y + 1, self.resolution):
                     am = (x - a[0], y - a[1])
-
-
                     gamma = (ab[1] * am[0] - ab[0] * am[1]) / div
 
                     # Vector AB can't be null or div would be null
@@ -489,14 +493,9 @@ class Scene:
                     else:
                         alpha = (am[1] - ac[1] * gamma) / ab[1]
 
-
-
-
-                    color = (0, 0.5, 0)
-
-
-                    if color:
-                        self.draw_pixel(ctx, x, y, color)
+                    if alpha >= 0 and gamma >= 0 and gamma <= 1 - alpha:
+                        intensity = 0.5
+                        self.draw_pixel(ctx, x, y, (0, intensity, 0))
 
 
         draw_time = time.time() - draw_time
@@ -529,7 +528,7 @@ class Scene:
 
 
 player = Player(pi/4, 0, Vector(0, 0, 0))
-scene = Scene(resolution=3)
+scene = Scene(resolution=3, method=Method.RASTERIZING)
 scene.set_player(player)
 
 s1 = Sphere(Vector(5, 5, 1), 0.6)
