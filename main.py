@@ -75,6 +75,14 @@ import numpy as np
 
 
 
+RED = (1, 0, 0)
+GREEN = (0, 1, 0)
+BLUE = (0, 0, 1)
+BLACK = (0, 0, 0)
+GREY = (0.3, 0.3, 0.3)
+WHITE = (1, 1, 1)
+DARKGREEN = (0, 0.5, 0)
+
 
 class Vector:
     def __init__(self, x, y, z):
@@ -183,12 +191,17 @@ class Sphere:
 
 # a, b, c are vectors
 class Triangle:
-    def __init__(self, a, b, c):
+    def __init__(self, a, b, c, a_color = None, b_color = None, c_color = None):
         self.a = a
         self.b = b
         self.c = c
 
         self.normal = self.get_normal()
+
+        self.a_color = a_color if a_color is not None else DARKGREEN
+        self.b_color = b_color if b_color is not None else DARKGREEN
+        self.c_color = c_color if c_color is not None else DARKGREEN
+
 
     # Solving the three linear equations system
     def intersect_ray(self, e, m):
@@ -448,7 +461,7 @@ class Scene:
 
     def draw_frame_rasterize(self, da, ctx):
         draw_time = time.time()
-        self.fill_canvas(ctx, (0, 0, 0))
+        self.fill_canvas(ctx, (0.3, 0.3, 0.3))
         pixels = np.full((self.screen_W, self.screen_H), None)
         z_buffer = np.full((self.screen_W, self.screen_H), inf)
 
@@ -499,20 +512,61 @@ class Scene:
 
                     # Vector AB can't be null or div would be null
                     if ab[0] != 0:
-                        alpha = (am[0] - ac[0] * gamma) / ab[0]
+                        beta = (am[0] - ac[0] * gamma) / ab[0]
                     else:
-                        alpha = (am[1] - ac[1] * gamma) / ab[1]
+                        beta = (am[1] - ac[1] * gamma) / ab[1]
 
-                    if alpha >= 0 and gamma >= 0 and gamma <= 1 - alpha:
-                        # Barycentric coefficients are (1 - alpha - gamma) for A, alpha for B and gamma for C
-                        z = (1 - alpha - gamma) / za + alpha / zb + gamma / zc
+                    if beta >= 0 and gamma >= 0 and gamma <= 1 - beta:
+                        # Barycentric coefficients are alpha for A, beta for B and gamma for C
+                        alpha = 1 - beta - gamma
+
+                        z = alpha / za + beta / zb + gamma / zc
                         z_buffer[x][y] = 1 / z
 
+                        # Coloring by depth
                         # Temporary test formula ; to be interpolated instead
-                        intensity = (8 - z_buffer[x][y]) / 3
+                        # intensity = (8 - z_buffer[x][y]) / 3
+                        # color = (0, intensity, 0)
 
-                        pixels[x][y] = (0, intensity, 0)
+                        # Texturing
+                        # Texture not aligned to triangle but seems to work
+                        xp = z_buffer[x][y] * (alpha * triangle.a.x / za + beta * triangle.b.x / zb + gamma * triangle.c.x / zc)
+                        yp = z_buffer[x][y] * (alpha * triangle.a.y / za + beta * triangle.b.y / zb + gamma * triangle.c.y / zc)
 
+                        xp = floor(5 * xp)
+                        yp = floor(5 * yp)
+
+                        if (xp + yp) % 2 == 0:
+                            color = WHITE
+                        else:
+                            color = BLACK
+
+                        # Color interpolation
+                        # r = z_buffer[x][y] * (alpha * triangle.a_color[0] / za + beta * triangle.b_color[0] / zb + gamma * triangle.c_color[0] / zc)
+                        # g = z_buffer[x][y] * (alpha * triangle.a_color[1] / za + beta * triangle.b_color[1] / zb + gamma * triangle.c_color[1] / zc)
+                        # b = z_buffer[x][y] * (alpha * triangle.a_color[2] / za + beta * triangle.b_color[2] / zb + gamma * triangle.c_color[2] / zc)
+                        # color = (r, g, b)
+
+                        # Linear color interpolation (BAD)
+                        # r = alpha * triangle.a_color[0] + beta * triangle.b_color[0] + gamma * triangle.c_color[0]
+                        # g = alpha * triangle.a_color[1] + beta * triangle.b_color[1] + gamma * triangle.c_color[1]
+                        # b = alpha * triangle.a_color[2] + beta * triangle.b_color[2] + gamma * triangle.c_color[2]
+                        # color = (r, g, b)
+
+                        # Linear texture interpolation (BAD)
+                        # xp = alpha * triangle.a.x + beta * triangle.b.x + gamma * triangle.c.x
+                        # yp = alpha * triangle.a.y + beta * triangle.b.y + gamma * triangle.c.y
+
+                        # xp = floor(5 * xp)
+                        # yp = floor(5 * yp)
+
+                        # if (xp + yp) % 2 == 0:
+                            # color = WHITE
+                        # else:
+                            # color = BLACK
+
+                        # Setting pixel color
+                        pixels[x][y] = color
 
 
             # Actually draw pixels
@@ -573,7 +627,8 @@ scene.set_player(player)
 s1 = Sphere(Vector(5, 5, 1), 0.6)
 s2 = Sphere(Vector(3, 5, 0), 0.8)
 light = Light(Vector(0, 0, 0))
-t1 = Triangle(Vector(5, 2, 0), Vector(5, -2, 0), Vector(8, 0, 3))
+# t1 = Triangle(Vector(5, 2, 0), Vector(5, -2, 0), Vector(8, 0, 3))
+t1 = Triangle(Vector(6, 2, 0), Vector(3.2, -1.5, -0.5), Vector(8, -0.5, 3), a_color = RED, b_color = GREEN, c_color = BLUE)
 
 scene.add_sphere(s1)
 scene.add_sphere(s2)
