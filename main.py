@@ -203,6 +203,7 @@ class Triangle:
         self.c_color = c_color if c_color is not None else DARKGREEN
 
 
+
     # Solving the three linear equations system
     def intersect_ray(self, e, m):
         av = self.b - self.a
@@ -501,9 +502,15 @@ class Scene:
             if max_y >= self.screen_H:
                 max_y = self.screen_H - 1
 
+            # Vertices z-buffers
             za = self.find_z_index(e, triangle.a, v_v, w_v, h_v)
             zb = self.find_z_index(e, triangle.b, v_v, w_v, h_v)
             zc = self.find_z_index(e, triangle.c, v_v, w_v, h_v)
+
+            # Vertices lighting
+            light_a = self.light.lambert(triangle.a, triangle.normal)
+            light_b = self.light.lambert(triangle.b, triangle.normal)
+            light_c = self.light.lambert(triangle.c, triangle.normal)
 
             for x in range(min_x, max_x + 1, self.resolution):
                 for y in range(min_y, max_y + 1, self.resolution):
@@ -520,53 +527,59 @@ class Scene:
                         # Barycentric coefficients are alpha for A, beta for B and gamma for C
                         alpha = 1 - beta - gamma
 
+                        # Calculate z-buffer and modify frame buffer only if closer to screen
                         z = 1 / (alpha / za + beta / zb + gamma / zc)
-                        z_buffer[x][y] = z
+                        if z < z_buffer[x][y]:
+                            z_buffer[x][y] = z
 
-                        # Coloring by depth
-                        # Temporary test formula ; to be interpolated instead
-                        # intensity = (8 - z_buffer[x][y]) / 3
-                        # color = (0, intensity, 0)
+                            # Coloring by depth
+                            # Temporary test formula ; to be interpolated instead
+                            # intensity = (8 - z_buffer[x][y]) / 3
+                            # color = (0, intensity, 0)
 
-                        # Texturing
-                        # Texture not aligned to triangle but seems to work
-                        xp = z_buffer[x][y] * (alpha * triangle.a.x / za + beta * triangle.b.x / zb + gamma * triangle.c.x / zc)
-                        yp = z_buffer[x][y] * (alpha * triangle.a.y / za + beta * triangle.b.y / zb + gamma * triangle.c.y / zc)
+                            # Texturing
+                            # Texture not aligned to triangle but seems to work
+                            xp = z_buffer[x][y] * (alpha * triangle.a.x / za + beta * triangle.b.x / zb + gamma * triangle.c.x / zc)
+                            yp = z_buffer[x][y] * (alpha * triangle.a.y / za + beta * triangle.b.y / zb + gamma * triangle.c.y / zc)
 
-                        xp = floor(5 * xp)
-                        yp = floor(5 * yp)
+                            xp = floor(5 * xp)
+                            yp = floor(5 * yp)
 
-                        if (xp + yp) % 2 == 0:
-                            color = WHITE
-                        else:
-                            color = BLACK
+                            if (xp + yp) % 2 == 0:
+                                color = WHITE
+                            else:
+                                color = BLACK
 
-                        # Color interpolation
-                        # r = z_buffer[x][y] * (alpha * triangle.a_color[0] / za + beta * triangle.b_color[0] / zb + gamma * triangle.c_color[0] / zc)
-                        # g = z_buffer[x][y] * (alpha * triangle.a_color[1] / za + beta * triangle.b_color[1] / zb + gamma * triangle.c_color[1] / zc)
-                        # b = z_buffer[x][y] * (alpha * triangle.a_color[2] / za + beta * triangle.b_color[2] / zb + gamma * triangle.c_color[2] / zc)
-                        # color = (r, g, b)
+                            # Color interpolation
+                            # r = z_buffer[x][y] * (alpha * triangle.a_color[0] / za + beta * triangle.b_color[0] / zb + gamma * triangle.c_color[0] / zc)
+                            # g = z_buffer[x][y] * (alpha * triangle.a_color[1] / za + beta * triangle.b_color[1] / zb + gamma * triangle.c_color[1] / zc)
+                            # b = z_buffer[x][y] * (alpha * triangle.a_color[2] / za + beta * triangle.b_color[2] / zb + gamma * triangle.c_color[2] / zc)
+                            # color = (r, g, b)
 
-                        # Linear color interpolation (BAD)
-                        # r = alpha * triangle.a_color[0] + beta * triangle.b_color[0] + gamma * triangle.c_color[0]
-                        # g = alpha * triangle.a_color[1] + beta * triangle.b_color[1] + gamma * triangle.c_color[1]
-                        # b = alpha * triangle.a_color[2] + beta * triangle.b_color[2] + gamma * triangle.c_color[2]
-                        # color = (r, g, b)
+                            # Lighting interpolation
+                            light = z_buffer[x][y] * (alpha * light_a / za + beta * light_b / zb + gamma * light_c / zc)
+                            color = (0, light, 0)
 
-                        # Linear texture interpolation (BAD)
-                        # xp = alpha * triangle.a.x + beta * triangle.b.x + gamma * triangle.c.x
-                        # yp = alpha * triangle.a.y + beta * triangle.b.y + gamma * triangle.c.y
+                            # Linear color interpolation (BAD)
+                            # r = alpha * triangle.a_color[0] + beta * triangle.b_color[0] + gamma * triangle.c_color[0]
+                            # g = alpha * triangle.a_color[1] + beta * triangle.b_color[1] + gamma * triangle.c_color[1]
+                            # b = alpha * triangle.a_color[2] + beta * triangle.b_color[2] + gamma * triangle.c_color[2]
+                            # color = (r, g, b)
 
-                        # xp = floor(5 * xp)
-                        # yp = floor(5 * yp)
+                            # Linear texture interpolation (BAD)
+                            # xp = alpha * triangle.a.x + beta * triangle.b.x + gamma * triangle.c.x
+                            # yp = alpha * triangle.a.y + beta * triangle.b.y + gamma * triangle.c.y
 
-                        # if (xp + yp) % 2 == 0:
-                            # color = WHITE
-                        # else:
-                            # color = BLACK
+                            # xp = floor(5 * xp)
+                            # yp = floor(5 * yp)
 
-                        # Setting pixel color
-                        pixels[x][y] = color
+                            # if (xp + yp) % 2 == 0:
+                                # color = WHITE
+                            # else:
+                                # color = BLACK
+
+                            # Setting pixel color
+                            pixels[x][y] = color
 
 
             # Actually draw pixels
@@ -629,10 +642,12 @@ s2 = Sphere(Vector(3, 5, 0), 0.8)
 light = Light(Vector(0, 0, 0))
 # t1 = Triangle(Vector(5, 2, 0), Vector(5, -2, 0), Vector(8, 0, 3))
 t1 = Triangle(Vector(6, 2, 0), Vector(3.2, -1.5, -0.5), Vector(8, -0.5, 3), a_color = RED, b_color = GREEN, c_color = BLUE)
+t2 = Triangle(Vector(4, 2, 0), Vector(6, -1.5, -0.5), Vector(7, 2, 3), a_color = RED, b_color = GREEN, c_color = BLUE)
 
 scene.add_sphere(s1)
 scene.add_sphere(s2)
 scene.add_triangle(t1)
+scene.add_triangle(t2)
 scene.add_light(light)
 
 
