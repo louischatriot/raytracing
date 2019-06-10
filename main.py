@@ -520,8 +520,8 @@ class Scene:
                         # Barycentric coefficients are alpha for A, beta for B and gamma for C
                         alpha = 1 - beta - gamma
 
-                        z = alpha / za + beta / zb + gamma / zc
-                        z_buffer[x][y] = 1 / z
+                        z = 1 / (alpha / za + beta / zb + gamma / zc)
+                        z_buffer[x][y] = z
 
                         # Coloring by depth
                         # Temporary test formula ; to be interpolated instead
