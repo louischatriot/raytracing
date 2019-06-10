@@ -53,16 +53,20 @@ import numpy as np
 
 # t = time.time()
 
-# N = 10000
-# i = 0
-
-# while True:
-    # 2 / 4.32764
-    # i += 1
-    # if i >= N:
-        # break
+# N = 800
+# M = 600
 
 
+# a = np.full((N, M), 1)
+
+# print(a[799][500])
+
+# # for i in range(0, N):
+    # # b = []
+    # # for j in range(0, M):
+        # # b.append(1)
+
+    # # a.append(b)
 
 # t = time.time() - t
 # print(t * 1000)
@@ -445,6 +449,8 @@ class Scene:
     def draw_frame_rasterize(self, da, ctx):
         draw_time = time.time()
         self.fill_canvas(ctx, (0, 0, 0))
+        pixels = np.full((self.screen_W, self.screen_H), None)
+        z_buffer = np.full((self.screen_W, self.screen_H), inf)
 
         v_v, w_v, h_v = calc_vectors(self.player.a, self.player.t)
         e = self.player.pos
@@ -476,11 +482,15 @@ class Scene:
             if min_y < 0:
                 min_y = 0
 
-            if max_x > self.screen_W:
-                max_x = self.screen_W
+            if max_x >= self.screen_W:
+                max_x = self.screen_W - 1
 
-            if max_y > self.screen_H:
-                max_y = self.screen_H
+            if max_y >= self.screen_H:
+                max_y = self.screen_H - 1
+
+            za = self.find_z_index(e, triangle.a, v_v, w_v, h_v)
+            zb = self.find_z_index(e, triangle.b, v_v, w_v, h_v)
+            zc = self.find_z_index(e, triangle.c, v_v, w_v, h_v)
 
             for x in range(min_x, max_x + 1, self.resolution):
                 for y in range(min_y, max_y + 1, self.resolution):
@@ -494,8 +504,22 @@ class Scene:
                         alpha = (am[1] - ac[1] * gamma) / ab[1]
 
                     if alpha >= 0 and gamma >= 0 and gamma <= 1 - alpha:
-                        intensity = 0.5
-                        self.draw_pixel(ctx, x, y, (0, intensity, 0))
+                        # Barycentric coefficients are (1 - alpha - gamma) for A, alpha for B and gamma for C
+                        z = (1 - alpha - gamma) / za + alpha / zb + gamma / zc
+                        z_buffer[x][y] = 1 / z
+
+                        # Temporary test formula ; to be interpolated instead
+                        intensity = (8 - z_buffer[x][y]) / 3
+
+                        pixels[x][y] = (0, intensity, 0)
+
+
+
+            # Actually draw pixels
+            for x in range(0, self.screen_W):
+                for y in range(0, self.screen_H):
+                    if pixels[x][y] is not None:
+                        self.draw_pixel(ctx, x, y, pixels[x][y])
 
 
         draw_time = time.time() - draw_time
